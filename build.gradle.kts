@@ -1,27 +1,30 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
+	java
 	id("org.springframework.boot") version "2.5.6"
 	id("io.spring.dependency-management") version "1.0.11.RELEASE"
 	kotlin("jvm") version "1.5.31"
 	kotlin("plugin.spring") version "1.5.31"
+	id("maven-publish")
+	id("org.jetbrains.dokka") version "1.4.10.2"
 }
 
-group = "io.sireto.spring"
+group = "com.github.sireto"
 version = "1.0.0"
 java.sourceCompatibility = JavaVersion.VERSION_11
 
 repositories {
 	mavenCentral()
+	maven{
+		url = uri("https://jitpack.io")
+	}
 }
 
 dependencies {
-//	implementation("org.springframework.boot:spring-boot-common")
-
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-	// web
 	// swagger
 	implementation("io.springfox:springfox-swagger2:3.0.0")
 	implementation("io.springfox:springfox-swagger-ui:3.0.0")
@@ -52,8 +55,6 @@ dependencies {
 	implementation("org.testcontainers:postgresql:1.10.6")
 	implementation("org.postgresql:postgresql:42.2.5")
 	// test
-
-//	testImplementation("org.springframework.boot:spring-boot-common-test")
 	implementation("org.springframework.boot:spring-boot-starter-test")
 	implementation("org.springframework:spring-test:5.3.9")
 	implementation("org.junit.jupiter:junit-jupiter:5.7.2")
@@ -70,4 +71,88 @@ tasks.withType<KotlinCompile> {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+/**Source: https://github.com/nazmulidris/color-console/blob/main/build.gradle.kts **/
+val developerName = "Sireto Technology"
+val artifactId: String = rootProject.name
+val artifactGroup: String = project.group.toString()
+val artifactVersion: String = project.version.toString()
+
+val githubUsername = "sireto"
+val githubDescription = "A collection of common classes useful in Spring Boot development."
+val githubHttpUrl = "https://github.com/${githubUsername}/${artifactId}"
+val githubIssueTrackerUrl = "https://github.com/${githubUsername}/${artifactId}/issues"
+val license = "Apache-2.0"
+val licenseUrl = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+
+val sourcesJar by tasks.creating(Jar::class) {
+	archiveClassifier.set("sources")
+	from(sourceSets.getByName("main").allSource)
+	from("LICENCE.md") {
+		into("META-INF")
+	}
+}
+
+val dokkaJavadocJar by tasks.creating(Jar::class) {
+	dependsOn(tasks.dokkaJavadoc)
+	from(tasks.dokkaJavadoc.get().outputDirectory.get())
+	archiveClassifier.set("javadoc")
+}
+
+// More info on `publishing`:
+//   https://docs.gradle.org/current/userguide/publishing_maven.html#publishing_maven:resolved_dependencies
+// More info on authenticating with personal access token (DeveloperId and ArtifactName must be lowercase):
+//   https://docs.github.com/en/packages/guides/configuring-gradle-for-use-with-github-packages#authenticating-to-github-packages
+publishing {
+	repositories {
+		maven {
+			name = "GitHubPackages"
+			url = uri("https://maven.pkg.github.com/${githubUsername}/${artifactId}")
+			credentials {
+				username = System.getenv("GITHUB_PACKAGES_USERID")
+				password = System.getenv("GITHUB_PACKAGES_PUBLISH_TOKEN")
+			}
+		}
+	}
+}
+
+publishing {
+	publications {
+		register("gprRelease", MavenPublication::class) {
+			groupId = artifactGroup
+			artifactId = artifactId
+			version = artifactVersion
+
+			from(components["java"])
+
+			artifact(sourcesJar)
+			artifact(dokkaJavadocJar)
+
+			pom {
+				packaging = "jar"
+				name.set(artifactId)
+				description.set(githubDescription)
+				url.set(githubHttpUrl)
+				scm {
+					url.set(githubHttpUrl)
+				}
+				issueManagement {
+					url.set(githubIssueTrackerUrl)
+				}
+				licenses {
+					license {
+						name.set(license)
+						url.set(licenseUrl)
+					}
+				}
+				developers {
+					developer {
+						id.set(githubUsername)
+						name.set(developerName)
+					}
+				}
+			}
+		}
+	}
 }
