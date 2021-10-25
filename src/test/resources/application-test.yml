@@ -1,0 +1,8 @@
+spring:
+  jwt:
+    secret: MySecretToken
+    expiration_at: 1516239022
+    token_prefix: Bearer
+    header_key: Authorization
+    sign_in_url: /api/login
+    sign_up_url: /api/register
